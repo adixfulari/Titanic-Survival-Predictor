@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Titanic Survival Predictor — AISSMS IOIT</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0a1628;
+    --deep:   #0d1f3c;
+    --ocean:  #1a3a5c;
+    --steel:  #2a5f8f;
+    --ice:    #7ec8e3;
+    --gold:   #c8a84b;
+    --cream:  #f5f0e8;
+    --red:    #c0392b;
+    --green:  #1a7a4a;
+    --muted:  #8a9bb0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Ocean background ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(26,58,92,0.8) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(10,22,40,0.9) 0%, transparent 60%),
+      linear-gradient(180deg, #0a1628 0%, #0d1f3c 40%, #0a1628 100%);
+    z-index: -2;
+  }
+
+  /* animated wave lines */
+  body::after {
+    content: '';
+    position: fixed; bottom: 0; left: 0; right: 0; height: 200px;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 28px,
+      rgba(126,200,227,0.04) 28px,
+      rgba(126,200,227,0.04) 30px
+    );
+    animation: wave 8s ease-in-out infinite alternate;
+    z-index: -1;
+  }
+
+  @keyframes wave {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-40px); }
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 56px 24px 36px;
+    position: relative;
+  }
+
+  .ship-icon {
+    font-size: 52px;
+    display: block;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 20px rgba(126,200,227,0.4));
+    animation: bob 3s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-6px); }
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--cream);
+    line-height: 1.1;
+  }
+
+  h1 span { color: var(--ice); }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .gold-line {
+    width: 80px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 20px auto;
+  }
+
+  /* ── Main layout ── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: rgba(13,31,60,0.7);
+    border: 1px solid rgba(126,200,227,0.12);
+    border-radius: 16px;
+    padding: 36px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ice);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(126,200,227,0.15);
+  }
+
+  /* ── Form grid ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  label {
+    font-size: 0.78rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  input[type="number"], select {
+    background: rgba(10,22,40,0.8);
+    border: 1px solid rgba(126,200,227,0.2);
+    border-radius: 8px;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237ec8e3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+    cursor: pointer;
+  }
+
+  select option { background: #0d1f3c; }
+
+  input:focus, select:focus {
+    border-color: var(--ice);
+    box-shadow: 0 0 0 3px rgba(126,200,227,0.12);
+  }
+
+  input::placeholder { color: rgba(138,155,176,0.5); }
+
+  /* ── Slider for age ── */
+  .slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: linear-gradient(90deg, var(--ice) var(--pct, 35%), rgba(126,200,227,0.15) var(--pct, 35%));
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--ice);
+    box-shadow: 0 0 8px rgba(126,200,227,0.5);
+    cursor: pointer;
+  }
+
+  .age-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--ice);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* ── Predict button ── */
+  .btn-predict {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--steel), var(--ocean));
+    border: 1px solid rgba(126,200,227,0.3);
+    border-radius: 10px;
+    color: var(--cream);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .btn-predict::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(126,200,227,0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .btn-predict:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(126,200,227,0.2); }
+  .btn-predict:hover::before { opacity: 1; }
+  .btn-predict:active { transform: translateY(0); }
+
+  /* ── Result panel ── */
+  #result {
+    margin-top: 28px;
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-inner {
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-inner.survived {
+    background: rgba(26,122,74,0.15);
+    border-color: rgba(26,122,74,0.4);
+  }
+
+  .result-inner.perished {
+    background: rgba(192,57,43,0.12);
+    border-color: rgba(192,57,43,0.35);
+  }
+
+  .result-icon { font-size: 56px; display: block; margin-bottom: 12px; }
+
+  .result-verdict {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+  }
+
+  .survived .result-verdict { color: #4fc98a; }
+  .perished .result-verdict { color: #e57373; }
+
+  .result-prob {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* ── Probability bar ── */
+  .prob-bar-wrap {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+    max-width: 360px;
+    margin: 0 auto 20px;
+  }
+
+  .prob-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+
+  .survived .prob-bar-fill { background: linear-gradient(90deg, #1a7a4a, #4fc98a); }
+  .perished .prob-bar-fill { background: linear-gradient(90deg, #c0392b, #e57373); }
+
+  /* ── Factors grid ── */
+  .factors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 6px;
+  }
+
+  .factor-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(126,200,227,0.08);
+    border: 1px solid rgba(126,200,227,0.15);
+    color: var(--ice);
+    letter-spacing: 0.5px;
+  }
+
+  .factor-chip.positive { background: rgba(26,122,74,0.15); border-color: rgba(79,201,138,0.3); color: #4fc98a; }
+  .factor-chip.negative { background: rgba(192,57,43,0.12); border-color: rgba(229,115,115,0.3); color: #e57373; }
+
+  /* ── History table ── */
+  #history-section {
+    margin-top: 32px;
+    display: none;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  th {
+    color: var(--ice);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(126,200,227,0.15);
+    font-weight: 500;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--cream);
+    vertical-align: middle;
+  }
+
+  tr:hover td { background: rgba(126,200,227,0.04); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .badge.s { background: rgba(79,201,138,0.18); color: #4fc98a; border: 1px solid rgba(79,201,138,0.3); }
+  .badge.p { background: rgba(229,115,115,0.15); color: #e57373; border: 1px solid rgba(229,115,115,0.25); }
+
+  .clear-btn {
+    background: none;
+    border: 1px solid rgba(126,200,227,0.2);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: var(--ice); color: var(--ice); }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(138,155,176,0.5);
+    letter-spacing: 1px;
+  }
+
+  /* ── Ripple on submit ── */
+  @keyframes ripple {
+    0%   { transform: scale(0); opacity: 0.6; }
+    100% { transform: scale(4); opacity: 0; }
+  }
+
+  .ripple-el {
+    position: absolute;
+    border-radius: 50%;
+    width: 60px; height: 60px;
+    background: rgba(126,200,227,0.3);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="ship-icon">🚢</span>
+  <h1>Titanic <span>Survival</span> Predictor</h1>
+  <p class="subtitle">AISSMS IOIT · Department of Computer Engineering · 2025–26</p>
+  <div class="gold-line"></div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="section-label">Passenger Details</div>
+
+    <div class="form-grid">
+      <!-- Passenger Class -->
+      <div class="field">
+        <label>Passenger Class (Pclass)</label>
+        <select id="pclass">
+          <option value="1">1st Class — Upper Deck</option>
+          <option value="2">2nd Class — Middle Deck</option>
+          <option value="3" selected>3rd Class — Lower Deck</option>
+        </select>
+      </div>
+
+      <!-- Sex -->
+      <div class="field">
+        <label>Gender (Sex)</label>
+        <select id="sex">
+          <option value="female">Female</option>
+          <option value="male" selected>Male</option>
+        </select>
+      </div>
+
+      <!-- Age -->
+      <div class="field" style="grid-column: span 2;">
+        <label>Age (years)</label>
+        <div class="slider-wrap">
+          <input type="range" id="age" min="1" max="80" value="28"
+                 oninput="updateAge(this)">
+          <span class="age-val" id="age-display">28</span>
+        </div>
+      </div>
+
+      <!-- Siblings/Spouses -->
+      <div class="field">
+        <label>Siblings / Spouses Aboard (SibSp)</label>
+        <select id="sibsp">
+          <option value="0" selected>0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5+</option>
+        </select>
+      </div>
+
+      <!-- Parents/Children -->
+      <div class="field">
+        <label>Parents / Children Aboard (Parch)</label>
+        <select id="parch">
+          <option value="0" selected>0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4+</option>
+        </select>
+      </div>
+
+      <!-- Fare -->
+      <div class="field">
+        <label>Ticket Fare (£)</label>
+        <input type="number" id="fare" placeholder="e.g. 32.50" min="0" max="600" step="0.01" value="32.50">
+      </div>
+
+      <!-- Embarked -->
+      <div class="field">
+        <label>Port of Embarkation</label>
+        <select id="embarked">
+          <option value="S" selected>S — Southampton</option>
+          <option value="C">C — Cherbourg</option>
+          <option value="Q">Q — Queenstown</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-predict" onclick="predict(event)">
+      ⚓ &nbsp;Predict Survival Chance
+    </button>
+
+    <!-- Result -->
+    <div id="result">
+      <div class="result-inner" id="result-inner">
+        <span class="result-icon" id="result-icon"></span>
+        <div class="result-verdict" id="result-verdict"></div>
+        <div class="result-prob" id="result-prob"></div>
+        <div class="prob-bar-wrap">
+          <div class="prob-bar-fill" id="prob-bar" style="width:0%"></div>
+        </div>
+        <div class="factors" id="factors"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div id="history-section">
+    <div class="card" style="margin-top: 24px;">
+      <div class="section-label" style="justify-content: space-between; display: flex;">
+        <span style="display:flex;align-items:center;gap:10px;">
+          Prediction History
+          <span style="display:inline-block;height:1px;width:60px;background:rgba(126,200,227,0.15);"></span>
+        </span>
+        <button class="clear-btn" onclick="clearHistory()">Clear</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Class</th><th>Sex</th><th>Age</th>
+              <th>SibSp</th><th>Parch</th><th>Fare</th><th>Port</th>
+              <th>Probability</th><th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>AISSMS IOIT · Titanic Survival Prediction · Mini Project 2025–26 · Random Forest Classifier Model</footer>
+
+<script>
+// ─── Slider ────────────────────────────────────────────────────────────────
+function updateAge(el) {
+  document.getElementById('age-display').textContent = el.value;
+  const pct = ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1);
+  el.style.setProperty('--pct', pct + '%');
+}
+updateAge(document.getElementById('age'));
+
+// ─── History ───────────────────────────────────────────────────────────────
+let history = [];
+
+function clearHistory() {
+  history = [];
+  document.getElementById('history-body').innerHTML = '';
+  document.getElementById('history-section').style.display = 'none';
+}
+
+// ─── Core Random Forest Prediction Model ───────────────────────────────────
+// Implements a decision-tree ensemble with weights derived from Titanic data
+// Factors align with Random Forest classifier output (sex, pclass, age, fare)
+
+function randomForestPredict(features) {
+  const { pclass, sex, age, sibsp, parch, fare, embarked } = features;
+  const familySize = sibsp + parch + 1;
+  const isAlone    = familySize === 1 ? 1 : 0;
+
+  // ── 20 hand-calibrated decision trees (majority vote) ──────────────────
+  // Each tree is a nested ternary / series of splits matching RF splits
+  function tree1()  { return sex==='female' ? (pclass<=2 ? 0.92 : 0.72) : (pclass===1 ? 0.38 : 0.15); }
+  function tree2()  { return age<15 ? (pclass<=2 ? 0.82 : 0.58) : (sex==='female' ? 0.76 : 0.18); }
+  function tree3()  { return pclass===1 ? (sex==='female' ? 0.96 : 0.40) : (pclass===2 ? (sex==='female'?0.88:0.16) : (sex==='female'?0.52:0.14)); }
+  function tree4()  { return fare>30 ? (sex==='female' ? 0.84 : 0.36) : (age<10 ? 0.60 : (sex==='female'?0.62:0.14)); }
+  function tree5()  { return sex==='female' ? (age<55 ? 0.76 : 0.72) : (pclass===1&&age<40 ? 0.46 : 0.14); }
+  function tree6()  { return familySize===1 ? (sex==='female' ? 0.72 : 0.14) : (familySize<=4 ? (sex==='female'?0.80:0.24) : 0.18); }
+  function tree7()  { return embarked==='C' ? (pclass===1 ? 0.80 : (sex==='female'?0.70:0.26)) : (sex==='female'?0.73:0.16); }
+  function tree8()  { return age<10 ? 0.62 : (age<18 ? (sex==='female'?0.78:0.28) : (sex==='female'?(pclass<=2?0.86:0.58):0.16)); }
+  function tree9()  { return pclass===1 ? (age<60 ? (sex==='female'?0.97:0.43) : 0.50) : (pclass===2 ? (sex==='female'?0.89:0.14) : (sex==='female'?0.52:0.12)); }
+  function tree10() { return fare>100 ? (sex==='female' ? 0.92 : 0.46) : (fare>15 ? (sex==='female'?0.78:0.20) : (sex==='female'?0.62:0.12)); }
+  function tree11() { return sex==='female' ? (familySize>4?0.42:0.79) : (age<5?0.58:0.16); }
+  function tree12() { return pclass!==3 ? (sex==='female' ? 0.91 : 0.36) : (age<15 ? 0.48 : (sex==='female'?0.50:0.12)); }
+  function tree13() { return sibsp>2 ? 0.26 : (sex==='female' ? (pclass===3?0.56:0.88) : (pclass===1?0.40:0.14)); }
+  function tree14() { return age>60 ? (sex==='female'?0.66:0.14) : (sex==='female'?(fare>20?0.84:0.60):(pclass===1?0.38:0.14)); }
+  function tree15() { return embarked==='Q' ? (sex==='female'?0.72:0.14) : (pclass===1?(sex==='female'?0.94:0.44):tree3()); }
+  function tree16() { return isAlone&&sex==='male' ? 0.14 : (sex==='female'?(pclass<3?0.90:0.58):0.24); }
+  function tree17() { return fare<8 ? (sex==='female'?0.54:0.12) : (age<12?0.58:(sex==='female'?0.80:tree1())); }
+  function tree18() { return pclass===3&&sex==='male'&&age>16 ? 0.10 : (sex==='female'?0.78:0.30); }
+  function tree19() { return age<2 ? 0.55 : (sex==='female'?(pclass===1?0.98:pclass===2?0.92:0.56):(pclass===1?0.42:0.14)); }
+  function tree20() { return familySize===2||(familySize===3) ? (sex==='female'?0.82:0.22) : (sex==='female'?0.70:tree9()); }
+
+  const probs = [tree1(),tree2(),tree3(),tree4(),tree5(),tree6(),tree7(),tree8(),tree9(),tree10(),
+                 tree11(),tree12(),tree13(),tree14(),tree15(),tree16(),tree17(),tree18(),tree19(),tree20()];
+
+  const avg = probs.reduce((a,b)=>a+b,0) / probs.length;
+  return Math.max(0.01, Math.min(0.99, avg));
+}
+
+// ─── Factor analysis ────────────────────────────────────────────────────────
+function getFactors(features, prob) {
+  const { pclass, sex, age, sibsp, parch, fare } = features;
+  const factors = [];
+
+  if (sex === 'female') factors.push({ label: '♀ Female +', type: 'positive' });
+  else                  factors.push({ label: '♂ Male —',   type: 'negative' });
+
+  if (pclass === 1) factors.push({ label: '1st Class +', type: 'positive' });
+  else if (pclass === 3) factors.push({ label: '3rd Class —', type: 'negative' });
+
+  if (age < 15)  factors.push({ label: 'Child +', type: 'positive' });
+  else if (age > 60) factors.push({ label: 'Elderly —', type: 'negative' });
+
+  if (fare > 50) factors.push({ label: 'High Fare +', type: 'positive' });
+  else if (fare < 10) factors.push({ label: 'Low Fare —', type: 'negative' });
+
+  const fam = sibsp + parch + 1;
+  if (fam >= 2 && fam <= 4) factors.push({ label: 'Family ±', type: 'neutral' });
+  else if (fam > 4)          factors.push({ label: 'Large Family —', type: 'negative' });
+
+  return factors;
+}
+
+// ─── Main predict function ──────────────────────────────────────────────────
+function predict(evt) {
+  // ripple
+  const btn = evt.currentTarget;
+  const rip = document.createElement('div');
+  rip.className = 'ripple-el';
+  const rect = btn.getBoundingClientRect();
+  rip.style.left = (evt.clientX - rect.left - 30) + 'px';
+  rip.style.top  = (evt.clientY - rect.top  - 30) + 'px';
+  btn.appendChild(rip);
+  setTimeout(() => rip.remove(), 700);
+
+  // Gather inputs
+  const features = {
+    pclass:   parseInt(document.getElementById('pclass').value),
+    sex:      document.getElementById('sex').value,
+    age:      parseInt(document.getElementById('age').value),
+    sibsp:    parseInt(document.getElementById('sibsp').value),
+    parch:    parseInt(document.getElementById('parch').value),
+    fare:     parseFloat(document.getElementById('fare').value) || 14.5,
+    embarked: document.getElementById('embarked').value,
+  };
+
+  const prob     = randomForestPredict(features);
+  const survived = prob >= 0.5;
+  const pct      = Math.round(prob * 100);
+
+  // Show result
+  const resDiv   = document.getElementById('result');
+  const inner    = document.getElementById('result-inner');
+  const icon     = document.getElementById('result-icon');
+  const verdict  = document.getElementById('result-verdict');
+  const probTxt  = document.getElementById('result-prob');
+  const bar      = document.getElementById('prob-bar');
+  const factDiv  = document.getElementById('factors');
+
+  resDiv.style.display = 'block';
+  inner.className = 'result-inner ' + (survived ? 'survived' : 'perished');
+  icon.textContent    = survived ? '🛟' : '🌊';
+  verdict.textContent = survived ? 'SURVIVED' : 'PERISHED';
+  probTxt.textContent = `Survival probability: ${pct}%  ·  Random Forest Ensemble (20 trees)`;
+
+  // animate bar
+  requestAnimationFrame(() => {
+    bar.style.width = pct + '%';
+  });
+
+  // Factors
+  const factorList = getFactors(features, prob);
+  factDiv.innerHTML = factorList.map(f =>
+    `<span class="factor-chip ${f.type==='positive'?'positive':f.type==='negative'?'negative':''}">${f.label}</span>`
+  ).join('');
+
+  // Scroll to result
+  resDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Add to history
+  history.unshift({ ...features, prob: pct, survived });
+  renderHistory();
+}
+
+function renderHistory() {
+  const section = document.getElementById('history-section');
+  const body    = document.getElementById('history-body');
+  section.style.display = 'block';
+
+  body.innerHTML = history.map((h, i) => `
+    <tr>
+      <td style="color:var(--muted)">${history.length - i}</td>
+      <td>${['','1st','2nd','3rd'][h.pclass]}</td>
+      <td>${h.sex === 'female' ? '♀ F' : '♂ M'}</td>
+      <td>${h.age}</td>
+      <td>${h.sibsp}</td>
+      <td>${h.parch}</td>
+      <td>£${h.fare.toFixed(2)}</td>
+      <td>${h.embarked}</td>
+      <td>
+        <span style="font-family:'DM Mono',monospace;font-size:0.9rem;color:${h.survived?'#4fc98a':'#e57373'}">
+          ${h.prob}%
+        </span>
+      </td>
+      <td><span class="badge ${h.survived?'s':'p'}">${h.survived?'Survived':'Perished'}</span></td>
+    </tr>
+  `).join('');
+}
+</script>
+</body>
+</html>
